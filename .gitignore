@@ -8,12 +8,3 @@ __pycache__/
 
 # Ignore system files
 .DS_Store
-
-
-
-# Ignore everything in the data folder
-data/*
-# But don't ignore the Custom Dataset subfolder
-!data/CustomDataset/
-# Also, if you want to allow everything inside data/custom dataset:
-!data/CustomDataset/*
