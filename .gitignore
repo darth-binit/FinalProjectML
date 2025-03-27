@@ -8,3 +8,12 @@ __pycache__/
 
 # Ignore system files
 .DS_Store
+
+Project_File/data/augmented_data
+Project_File/data/HAM10000_images_part_1
+Project_File/data/HAM10000_images_part_2
+Project_File/data/HAM10000_metadata.csv
+Project_File/data/Xtest_Image.npy
+Project_File/data/Xtrain_Image.npy
+Project_File/data/ytest.npy
+Project_File/data/ytrain.npy
