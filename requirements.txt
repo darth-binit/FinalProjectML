@@ -1,0 +1,11 @@
+pandas
+scikit-learn
+numpy
+seaborn
+matplotlib
+torch
+torchvision
+tqdm
+plotly
+streamlit
+imblearn
