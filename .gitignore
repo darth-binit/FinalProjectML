@@ -15,3 +15,6 @@ Project_File/data/HAM10000_images_part_2
 Project_File/data/HAM10000_metadata.csv
 Project_File/data/Xtest_Image.npy
 Project_File/data/ytest.npy
+
+
+*.egg-info/
