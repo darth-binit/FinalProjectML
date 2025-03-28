@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-import torch.nn as nn
 from torch.utils.data import IterableDataset, Dataset
 import random
 from PIL import Image
@@ -121,27 +120,9 @@ class TestNumpyDataset(Dataset):
         return img, torch.tensor(label, dtype=torch.long)
 
 # To be used in data has severe imbalance
-class FocalLoss(nn.Module):
-    def __init__(self, alpha=1.0, gamma=2.0, label_smoothing=0.0, weight=None):
-        """
-        FocalLoss that combines label smoothing and class weighting.
 
-        Args:
-            alpha (float): Scaling factor.
-            gamma (float): Focusing parameter.
-            label_smoothing (float): Amount of label smoothing.
-            weight (Tensor): A manual rescaling weight given to each class.
-        """
-        super(FocalLoss, self).__init__()
-        self.alpha = alpha
-        self.gamma = gamma
-        self.label_smoothing = label_smoothing
-        self.ce = nn.CrossEntropyLoss(reduction='none',
-                                      label_smoothing=label_smoothing,
-                                      weight=weight)
 
-    def forward(self, logits, labels):
-        ce_loss = self.ce(logits, labels)
-        pt = torch.exp(-ce_loss)  # probability for the true class
-        focal_loss = self.alpha * (1 - pt) ** self.gamma * ce_loss
-        return focal_loss.mean()
+
+
+
+

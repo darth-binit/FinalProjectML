@@ -1,0 +1,38 @@
+.css-j5r0tf {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background-color: #6A98AB;
+}
+
+/* In your custom CSS file or st.markdown(...) style block */
+.diagnosis {
+  background-color: red;      /* or #ff0000 */
+  color: white;
+  padding: 0.2em 0.5em;
+  border-radius: 0.5em;
+}
+
+[data-testid="stButton"] button {
+    width: 100%;
+    height: 80px;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 10px;
+    transition: 0.3s;
+    background-color: #E8F5E9;  /* Light Green */
+    color: black;
+    border: 2px solid #A9DFBF;
+}
+
+/* 🔥 Hover Effect */
+[data-testid="stButton"] button:hover {
+    background-color: #C70039 !important;  /* Dark Red */
+    color: white !important;
+}
+
+/* ✅ Selected Button Style (Persists when clicked) */
+[data-testid="stButton"] button.selected {
+    background-color: #C70039 !important;  /* Dark Red */
+    color: white !important;
+    border: 2px solid #900C3F !important;
+}
