@@ -169,6 +169,7 @@ def main():
     selected_localization = st.sidebar.selectbox("Localization", df['localization'].unique().tolist())
     selected_sex = st.sidebar.selectbox("Gender", df['sex'].unique().tolist())
     selected_dx_type = st.sidebar.selectbox("DX Type", df['dx_type'].unique().tolist())
+    selected_dataset = st.sidebar.selectbox("Dataset", df['dataset'].unique().tolist())
 
     with st.spinner("Loading model..."):
         model = load_model(model_path, device)
