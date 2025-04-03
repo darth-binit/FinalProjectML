@@ -162,7 +162,7 @@ def display_gradcam_flow(model, input_tensor, pil_img):
 
         # Display the overlay image
         axes[1].imshow(overlayed)
-        axes[1].set_title(f"{layer_name} Overlay", fontsize=8)
+        axes[1].set_title(f"{layer_name} Overlay", fontsize=8.5)
         axes[1].axis('off')
 
         fig.tight_layout()
