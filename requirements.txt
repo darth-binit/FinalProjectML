@@ -10,3 +10,4 @@ plotly
 streamlit
 imblearn
 streamlit-option-menu
+opencv-python
