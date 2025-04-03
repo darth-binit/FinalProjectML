@@ -1,6 +1,16 @@
+import asyncio
+
+try:
+    asyncio.get_running_loop()
+except RuntimeError:
+    asyncio.set_event_loop(asyncio.new_event_loop())
+
 import sys
 import os
-print("PYTHONPATH:", sys.path)
+# Add the root directory of your project to sys.path
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+if ROOT_DIR not in sys.path:
+    sys.path.append(ROOT_DIR)
 
 import streamlit as st
 import numpy as np
