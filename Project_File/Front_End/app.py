@@ -96,7 +96,8 @@ def load_lesion_details(json_path):
     return details
 
 # Adjust the path to your JSON file
-lesion_details = load_lesion_details("/Users/binit/PycharmProjects/FinalProject/Project_File/Front_End/explain.json")
+lesion_path = os.path.join(current_dir, "explain.json")
+lesion_details = load_lesion_details(lesion_path)
 
 @st.cache_resource
 def load_model(model_path, device):
