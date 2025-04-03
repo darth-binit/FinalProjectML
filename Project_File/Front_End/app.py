@@ -16,13 +16,11 @@ import plotly.figure_factory as ff
 from streamlit_option_menu import option_menu
 import base64
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_dir = os.path.dirname(current_dir)
-if project_dir not in sys.path:
-    sys.path.append(project_dir)
-
 from Project_File.config.configuration import GradCAM, compute_cam_and_overlay
 from Project_File.Model.ResNet_Attn import ResNetAttention, BasicBlock
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_dir = os.path.dirname(current_dir)
 
 data_path = os.path.join(project_dir, "data", "HAM10000_metadata.csv")
 df = pd.read_csv(data_path)
