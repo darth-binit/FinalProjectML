@@ -31,6 +31,7 @@ import base64
 
 from Project_File.config.configuration import GradCAM
 from Project_File.Model.ResNet_Attn import ResNetAttention, BasicBlock
+import cv2
 
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -51,7 +52,7 @@ def get_base64_image(file_path):
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Build dynamic paths
-img_path_main = os.path.join(current_dir, "19366.jpg")
+img_path_main = os.path.join(current_dir, "back-1.jpg")
 image_path_side = os.path.join(current_dir, "61802.jpg")
 img_base64_main = get_base64_image(img_path_main)
 img_base64_side = get_base64_image(image_path_side)
@@ -141,10 +142,6 @@ def display_gradcam_flow(model, input_tensor, pil_img):
     Creates one figure per layer (heatmap & overlay side by side) with a transparent background.
     After each layer's figure, an alternate down arrow (⏬) is displayed in the Streamlit UI.
     """
-    import matplotlib.pyplot as plt
-    import cv2
-    import numpy as np
-
     layers = [model.layer1, model.layer2, model.layer3, model.cbam, model.mha, model.layer4]
     names = ['layer1_conv', 'layer2_conv', 'layer3_conv', 'cbam', 'Attention', 'layer4_conv']
 
@@ -161,14 +158,14 @@ def display_gradcam_flow(model, input_tensor, pil_img):
         # Create a figure with 1 row and 2 columns for this layer
         fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(6, 3))
 
-        # Set figure and axes background transparent
+        #Set figure and axes background transparent
         fig.patch.set_facecolor("none")
         fig.patch.set_alpha(0.0)
         for ax in axes:
             ax.set_facecolor("none")
 
         # Display the heatmap with a colorbar
-        im = axes[0].imshow(heatmap_resized)
+        im = axes[0].imshow(heatmap_resized, cmap='jet')
         axes[0].set_title(f"{layer_name} Heatmap", fontsize=8)
         axes[0].axis('off')
         fig.colorbar(im, ax=axes[0], fraction=0.04, pad=0.04, shrink=0.6)
@@ -189,53 +186,48 @@ def display_gradcam_flow(model, input_tensor, pil_img):
 def show_image_hist_and_button(image):
     """
     Creates a two-column layout for the image & "Classify" button on the left
-    and the RGB histogram on the right. The histogram figure is set to have a transparent background.
+    and the RGB histogram on the right. The histogram figure is styled for visibility on any background.
     """
     col_left, col_right = st.columns([3, 2])
 
-    # LEFT COLUMN: Show the original image, then place the "Classify" button below it.
+    # LEFT COLUMN
     with col_left:
         st.image(image, caption="Uploaded Your Image", use_container_width=True)
-        classify_clicked = st.button("Classify", use_container_width=True)  # Button in left column
+        classify_clicked = st.button("Classify", use_container_width=True)
 
-    # RIGHT COLUMN: Plot the RGB histogram with transparent background
+    # RIGHT COLUMN: Transparent background histograms
     with col_right:
-        sns.set_style('white')
         fig, axes = plt.subplots(nrows=3, ncols=1, figsize=(4, 6))
 
-        # Set the figure and axes background to transparent
+        # Set figure background transparent
         fig.patch.set_facecolor("none")
         fig.patch.set_alpha(0.0)
-        for ax in axes:
-            ax.set_facecolor("none")
 
         np_img = np.array(image)
         r_vals = np_img[:, :, 0].ravel()
         g_vals = np_img[:, :, 1].ravel()
         b_vals = np_img[:, :, 2].ravel()
 
-        axes[0].hist(r_vals, bins=256, color="#FF0000", alpha=0.3)
-        axes[0].set_title('Red Channel')
-        axes[0].set_xlim([0, 256])
+        channel_data = [
+            ('Red Channel', r_vals, (1.0, 0.0, 0.0)),
+            ('Green Channel', g_vals, (0.0, 0.8, 0.0)),
+            ('Blue Channel', b_vals, (0.0, 0.4, 1.0))
+        ]
 
-        axes[1].hist(g_vals, bins=256, color="#00CC00", alpha=0.3)
-        axes[1].set_title('Green Channel')
-        axes[1].set_xlim([0, 256])
-
-        axes[2].hist(b_vals, bins=256, color="#0000FF", alpha=0.3)
-        axes[2].set_title('Blue Channel')
-        axes[2].set_xlim([0, 256])
-
-        # Remove the spines and tick marks from each axis
-        for ax in axes:
+        for ax, (title, data, color) in zip(axes, channel_data):
+            ax.hist(data,bins=256,color=color,edgecolor='black',linewidth=0.4,alpha=0.90)
+            ax.set_title(title, fontsize=10)
+            ax.set_xlim([0, 256])
+            ax.set_facecolor("none")  # Transparent axes
+            ax.tick_params(colors='black')
+            ax.set_ylabel("Count", fontsize=8)
+            ax.grid(False)
             for spine in ax.spines.values():
                 spine.set_visible(False)
-            ax.tick_params(left=False, bottom=False)
 
         fig.tight_layout()
         st.pyplot(fig)
 
-    # Return whether the "Classify" button was clicked
     return classify_clicked
 
 
@@ -292,6 +284,14 @@ def main():
         model = load_model(model_path, device)
     st.sidebar.success("Model loaded successfully!")
 
+    preview_image_path = os.path.join(current_dir, "paper_preview.png")
+    # Sidebar expander for research paper
+    with st.sidebar.expander("📄 Attention-Based CNN Paper ", expanded=False):
+        st.image(preview_image_path, caption="Click below to read full paper", use_container_width=True)
+
+        paper_url = "https://www.researchgate.net/publication/370388454_An_Attention-Based_Convolutional_Neural_Network_for_Intrusion_Detection_Model"
+        st.markdown(f"[🔗 Read Full Paper]({paper_url})", unsafe_allow_html=True)
+
     if select == "Home | Descriptive":
         csv_mod_path = os.path.join(project_dir, "data", "df.csv")
         df_mod = pd.read_csv(csv_mod_path)
@@ -332,6 +332,12 @@ def main():
             ax.spines['top'].set_visible(False)
             ax.spines['right'].set_visible(False)
 
+            # Make legend background transparent
+            legend = ax.get_legend()
+            legend.get_frame().set_facecolor('none')  # fully transparent
+            legend.get_frame().set_alpha(0.0)  # ensure alpha is 0
+            legend.get_frame().set_edgecolor('none')  # optional: remove legend border
+
             st.pyplot(fig)
 
         elif selected_dataset == "localization":
@@ -361,6 +367,12 @@ def main():
             plt.xticks(rotation=45)
             ax.spines['top'].set_visible(False)
             ax.spines['right'].set_visible(False)
+            # Make legend background transparent
+            legend = ax.get_legend()
+            legend.get_frame().set_facecolor('none')  # fully transparent
+            legend.get_frame().set_alpha(0.0)  # ensure alpha is 0
+            legend.get_frame().set_edgecolor('none')  # optional: remove legend border
+
             st.pyplot(fig)
 
         elif selected_dataset == "Age":
@@ -382,16 +394,31 @@ def main():
             st.plotly_chart(fig, use_container_width=True)
 
             #Figure 2
+            # Create plot
             fig, ax = plt.subplots(figsize=(12, 8))
             sns.set_style('whitegrid')
-            # Make the figure and axes transparent
+
+            # Transparent figure and axis background
             fig.patch.set_facecolor("none")
             ax.set_facecolor("none")
 
-            ax = sns.histplot(data=df_mod,x='age',hue='cell_type',multiple='stack',kde=True,ax=ax)
+            # Create the histogram
+            ax = sns.histplot(data=df_mod, x='age', hue='cell_type', multiple='stack', kde=True, ax=ax)
+
+            # Remove top and right spines
             ax.spines['top'].set_visible(False)
             ax.spines['right'].set_visible(False)
+
+            # Title
             plt.title('Age Histogram Cell Type Wise')
+
+            # Make legend background transparent
+            legend = ax.get_legend()
+            legend.get_frame().set_facecolor('none')  # fully transparent
+            legend.get_frame().set_alpha(0.0)  # ensure alpha is 0
+            legend.get_frame().set_edgecolor('none')  # optional: remove legend border
+
+            # Display in Streamlit
             st.pyplot(fig)
 
             #Figure 3
@@ -402,6 +429,13 @@ def main():
             ax.set_facecolor("none")
             ax = sns.histplot(data=df_mod, x='age', hue='localization', multiple='stack')
             plt.title('Age Histogram Localization Area Wise')
+
+            # Make legend background transparent
+            legend = ax.get_legend()
+            legend.get_frame().set_facecolor('none')  # fully transparent
+            legend.get_frame().set_alpha(0.0)  # ensure alpha is 0
+            legend.get_frame().set_edgecolor('none')  # optional: remove legend border
+
             ax.spines['top'].set_visible(False)
             ax.spines['right'].set_visible(False)
             st.pyplot(fig)
