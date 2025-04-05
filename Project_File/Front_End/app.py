@@ -231,6 +231,49 @@ def show_image_hist_and_button(image):
     return classify_clicked
 
 
+def highlight_top_n_regions(cam: np.ndarray, base_image: Image.Image, N: int = 10, mode: str = "box") -> np.ndarray:
+
+    cam_resized = cv2.resize(cam, base_image.size)
+    cam_norm = (cam_resized - np.min(cam_resized)) / (np.max(cam_resized) - np.min(cam_resized) + 1e-8)
+
+    # Determine threshold using top-N values
+    flattened = cam_norm.flatten()
+
+    # Instead of using top-N
+    threshold = np.percentile(flattened, 85)  # top 5% pixels
+    mask = cam_norm >= threshold
+
+    # Create binary mask for top regions
+    mask = cam_norm >= threshold
+    mask_uint8 = np.uint8(mask * 255)
+
+    # Find contours
+    contours, _ = cv2.findContours(mask_uint8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Convert PIL image to NumPy RGB
+    base_np = np.array(base_image.convert("RGB"))
+
+    drawn = False
+    for cnt in contours:
+        area = cv2.contourArea(cnt)
+        if area < 2:  # Ignore tiny specks
+            continue
+
+        drawn = True
+        if mode == "box":
+            x, y, w, h = cv2.boundingRect(cnt)
+            if w < 5 or h < 5:
+                continue
+            cv2.rectangle(base_np, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        elif mode == "contour":
+            cv2.drawContours(base_np, [cnt], -1, (255, 0, 0), 2)
+
+    # Fallback: if nothing drawn, display a notice and return original image
+    if not drawn:
+        st.warning("No high-activation regions found. Try lowering N or using contour mode.")
+
+    return base_np
+
 
 def streamlit_menu():
 
@@ -472,6 +515,10 @@ def main():
                     input_tensor = test_transform(image).unsqueeze(0).to(device)
                     gradcam = GradCAM(model, target_layer=model.layer4)
                     display_gradcam_flow(model, input_tensor, image)
+
+                    cam_np = gradcam.generate_cam(input_tensor, class_idx=pred_idx)
+                    highlighted_img = highlight_top_n_regions(cam_np, image, N=25, mode="contour")
+                    st.image(highlighted_img, caption="Top Attention Zones", use_container_width=True)
 
                     # Lesion details
                     lesion_text = lesion_details.get(str(pred_idx), "No details available.")
