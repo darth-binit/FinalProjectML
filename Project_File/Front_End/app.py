@@ -27,6 +27,7 @@ import seaborn as sns
 import plotly.figure_factory as ff
 
 from streamlit_option_menu import option_menu
+import plotly.graph_objects as go
 import base64
 
 from Project_File.config.configuration import GradCAM
@@ -101,18 +102,30 @@ lesion_path = os.path.join(current_dir, "explain.json")
 lesion_details = load_lesion_details(lesion_path)
 
 @st.cache_resource
-def load_model(model_path, device):
-    # Instantiate your model with the same architecture as during training.
-    model = ResNetAttention(
-        block=BasicBlock,
-        layers=[2, 2, 2, 1],  # Must match your training configuration.
-        num_classes=7,
-        use_cbam=True,
-        use_multihead=True
-    ).to(device)
-    model.load_state_dict(torch.load(model_path, map_location=device))
-    model.eval()
-    return model
+def load_model(model_path, device, selected_model):
+    if selected_model == 'CNN_With_Attention':
+     # Instantiate your model with the same architecture as during training.
+        model = ResNetAttention(
+            block=BasicBlock,
+            layers=[2, 2, 2, 1],  # Must match your training configuration.
+            num_classes=7,
+            use_cbam=True,
+            use_multihead=True
+        ).to(device)
+        model.load_state_dict(torch.load(model_path, map_location=device))
+        model.eval()
+        return model
+    else:
+        model = ResNetAttention(
+            block=BasicBlock,
+            layers=[2, 2, 2, 1],  # Must match your training configuration.
+            num_classes=7,
+            use_cbam=False,
+            use_multihead=False
+        ).to(device)
+        model.load_state_dict(torch.load(model_path, map_location=device))
+        model.eval()
+        return model
 
 
 def predict_image(model, image, device):
@@ -120,7 +133,6 @@ def predict_image(model, image, device):
     Given a PIL image, apply the test transform, run inference,
     and return the predicted class index and probability.
     """
-    input_tensor = test_transform(image).unsqueeze(0).to(device)
     input_tensor = test_transform(image).unsqueeze(0).to(device)
 
     with torch.no_grad():
@@ -137,15 +149,36 @@ def predict_image(model, image, device):
 
 
 # Display GradCAM for multiple layers in a grid
+def get_gradcam_layers(model):
+    """
+    Dynamically get the layers for GradCAM visualization.
+    Works for both CNN with and without attention blocks.
+    """
+    layers = []
+    if hasattr(model, 'layer1'):
+        layers.append((model.layer1, 'layer1_conv'))
+    if hasattr(model, 'layer2'):
+        layers.append((model.layer2, 'layer2_conv'))
+    if hasattr(model, 'layer3'):
+        layers.append((model.layer3, 'layer3_conv'))
+    if hasattr(model, 'cbam'):
+        layers.append((model.cbam, 'cbam'))
+    if hasattr(model, 'mha'):
+        layers.append((model.mha, 'Attention'))
+    if hasattr(model, 'layer4'):
+        layers.append((model.layer4, 'layer4_conv'))
+    return layers
+
 def display_gradcam_flow(model, input_tensor, pil_img):
     """
     Creates one figure per layer (heatmap & overlay side by side) with a transparent background.
     After each layer's figure, an alternate down arrow (⏬) is displayed in the Streamlit UI.
     """
-    layers = [model.layer1, model.layer2, model.layer3, model.cbam, model.mha, model.layer4]
-    names = ['layer1_conv', 'layer2_conv', 'layer3_conv', 'cbam', 'Attention', 'layer4_conv']
+    layers = get_gradcam_layers(model)
+    # layers = [model.layer1, model.layer2, model.layer3, model.cbam, model.mha, model.layer4]
+    # names = ['layer1_conv', 'layer2_conv', 'layer3_conv', 'cbam', 'Attention', 'layer4_conv']
 
-    for i, (layer, layer_name) in enumerate(zip(layers, names)):
+    for i, (layer, layer_name) in enumerate(layers):
         gradcam_current = GradCAM(model, target_layer=layer)
         cam_np = gradcam_current.generate_cam(input_tensor, class_idx=None)
         # Generate heatmap using cv2
@@ -256,13 +289,13 @@ def highlight_top_n_regions(cam: np.ndarray, base_image: Image.Image, N: int = 1
     drawn = False
     for cnt in contours:
         area = cv2.contourArea(cnt)
-        if area < 2:  # Ignore tiny specks
+        if area < 5:  # Ignore tiny specks
             continue
 
         drawn = True
         if mode == "box":
             x, y, w, h = cv2.boundingRect(cnt)
-            if w < 5 or h < 5:
+            if w < 10 or h < 10:
                 continue
             cv2.rectangle(base_np, (x, y), (x + w, y + h), (0, 255, 0), 2)
         elif mode == "contour":
@@ -311,8 +344,6 @@ select  = streamlit_menu()
 def main():
     css_path = os.path.join(current_dir, "style.css")
 
-    model_path = os.path.join(project_dir, "model_checkpoint", "cnn_attn_chk_pt", "best_model_epoch_13.pth")
-
     with open(css_path) as f:
         st.markdown("<style>{}</style>".format(f.read()), unsafe_allow_html=True)
 
@@ -320,12 +351,6 @@ def main():
         <div style="margin-top: 40px;">
           <h1 style="font-size: 1.5em; color: black;">Skin Legion Classification</h1>
         </div>""",unsafe_allow_html=True)
-
-    selected_dataset = st.sidebar.selectbox("Select Feature", ['Age','dx_type','cell_type','localization'])
-
-    with st.spinner("Loading model..."):
-        model = load_model(model_path, device)
-    st.sidebar.success("Model loaded successfully!")
 
     preview_image_path = os.path.join(current_dir, "paper_preview.png")
     # Sidebar expander for research paper
@@ -335,9 +360,13 @@ def main():
         paper_url = "https://www.researchgate.net/publication/370388454_An_Attention-Based_Convolutional_Neural_Network_for_Intrusion_Detection_Model"
         st.markdown(f"[🔗 Read Full Paper]({paper_url})", unsafe_allow_html=True)
 
+
     if select == "Home | Descriptive":
         csv_mod_path = os.path.join(project_dir, "data", "df.csv")
         df_mod = pd.read_csv(csv_mod_path)
+
+        selected_dataset = st.sidebar.selectbox("Select Feature", ['Age', 'dx_type', 'cell_type', 'localization'])
+
         if selected_dataset == 'cell_type':
             #Figure 1
             sns.set_palette("crest")
@@ -382,6 +411,46 @@ def main():
             legend.get_frame().set_edgecolor('none')  # optional: remove legend border
 
             st.pyplot(fig)
+
+            #figure 3
+            maskcsv_mod_path = os.path.join(project_dir, "data", "mask_statistics.csv")
+            mask_stats_df = pd.read_csv(maskcsv_mod_path)
+
+            def display_mask_stats_table(df):
+                fig = go.Figure(data=[go.Table(
+                    columnwidth=[110] + [70] * (len(df.columns) - 1),
+                    header=dict(
+                        values=[f"<b>{col}</b>" for col in df.columns],
+                        fill_color="#009fb7",  # Darker blue to match chart
+                        font=dict(color='white', size=12),
+                        align="center",
+                        height=30,
+                        line_color='white'
+                    ),
+                    cells=dict(
+                        values=[df[col] for col in df.columns],
+                        fill_color='rgba(255,255,255,0)',
+                        font=dict(color='black', size=11),
+                        align="center",
+                        height=26,
+                        line_color='gainsboro'
+                    )
+                )])
+
+                fig.update_layout(
+                    margin=dict(l=0, r=0, t=10, b=10),
+                    height=480,
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                )
+
+                # Centered and smaller heading
+                st.markdown("<h5 style='text-align: center;'>Lesion Mask Statistics Overview</h5>",
+                            unsafe_allow_html=True)
+                st.plotly_chart(fig, use_container_width=True)
+
+            display_mask_stats_table(mask_stats_df)
+
 
         elif selected_dataset == "localization":
             #Figure 1
@@ -501,6 +570,17 @@ def main():
     if select == "Predictive Analytics":
         uploaded_file = st.file_uploader("Upload Image for Classification", type=["jpg", "jpeg", "png"])
 
+        select_model = st.sidebar.selectbox("Select Model", ['CNN_With_Attention', 'Vanilla CNN'])
+
+        if select_model == 'CNN_With_Attention':
+            model_path = os.path.join(project_dir, "model_checkpoint", "cnn_attn_chk_pt", "best_model_epoch_13.pth")
+        else:
+            model_path = os.path.join(project_dir, "model_checkpoint", "cnn_chk_pt", "No_Attn_best_model_epoch_13.pth")
+
+        with st.spinner("Loading model..."):
+            model = load_model(model_path, device, select_model)
+        st.sidebar.success("Model loaded successfully!")
+
         if uploaded_file is not None:
             image = Image.open(uploaded_file).convert("RGB")
             # Show columns: image + classify button on left, histogram on right
@@ -525,10 +605,20 @@ def main():
                     parts = lesion_text.split('\n', 1)
                     lesion_name = parts[0].strip()
                     lesion_description = parts[1].strip() if len(parts) > 1 else ""
-                    lesion_html = f"""<div class="diagnosis" style="text-align:center;">{lesion_name}</div>"""
+
+                    # Decide CSS class based on pred_idx
+                    if str(pred_idx) in ['1', '5']:
+                        css_class = "diagnosis-cancer"
+                    elif str(pred_idx) == '0':
+                        css_class = "diagnosis-precancerous"
+                    else:
+                        css_class = "diagnosis-non-cancer"
+
+                    # Display styled lesion header
+                    lesion_html = f"""<div class="{css_class}" style="text-align:center;">{lesion_name}</div>"""
                     st.sidebar.markdown(lesion_html, unsafe_allow_html=True)
                     st.sidebar.markdown("<br>", unsafe_allow_html=True)
-                    st.sidebar.info(f"{lesion_description}")
+                    st.sidebar.info(lesion_description)
 
                 st.success(f"Prediction: {class_name} (Confidence: {confidence * 100:.2f}%)")
 

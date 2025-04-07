@@ -5,8 +5,24 @@
 }
 
 /* In your custom CSS file or st.markdown(...) style block */
-.diagnosis {
+.diagnosis-cancer {
   background-color: red;      /* or #ff0000 */
+  color: white;
+  padding: 0.2em 0.5em;
+  border-radius: 0.5em;
+}
+
+/* In your custom CSS file or st.markdown(...) style block */
+.diagnosis-non-cancer {
+  background-color: forestgreen;      /* or #ff0000 */
+  color: white;
+  padding: 0.2em 0.5em;
+  border-radius: 0.5em;
+}
+
+/* In your custom CSS file or st.markdown(...) style block */
+.diagnosis-precancerous {
+  background-color: orange;      /* or #ff0000 */
   color: white;
   padding: 0.2em 0.5em;
   border-radius: 0.5em;

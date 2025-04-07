@@ -1,0 +1,8 @@
+Class,Image count,Avg area %,Max area %,Min area %,Avg height (px),Min height (px),Max height (px),Avg width (px),Min width (px),Max width (px)
+Benign keratosis-like lesions ,1099,34.16%,99.61%,0.04%,200.4px,10px,450px,253.5px,10px,600px
+Melanocytic nevi,6705,31.11%,99.61%,0.04%,195.0px,10px,450px,244.6px,10px,600px
+Dermatofibroma,115,55.54%,99.61%,0.04%,290.2px,12px,450px,375.0px,10px,600px
+Melanoma,1113,43.38%,99.61%,0.04%,241.4px,10px,450px,313.3px,10px,600px
+Vascular lesions,142,49.87%,99.61%,0.04%,255.5px,10px,450px,334.8px,10px,600px
+Basal cell carcinoma,514,44.45%,99.61%,0.04%,238.1px,10px,450px,310.9px,10px,600px
+Actinic keratoses,327,40.3%,99.61%,0.04%,216.7px,11px,450px,280.3px,10px,600px
