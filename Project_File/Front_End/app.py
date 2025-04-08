@@ -107,7 +107,7 @@ def load_model(model_path, device, selected_model):
      # Instantiate your model with the same architecture as during training.
         model = ResNetAttention(
             block=BasicBlock,
-            layers=[2, 2, 2, 1],  # Must match your training configuration.
+            layers=[3, 3, 2, 2],  # Must match your training configuration.
             num_classes=7,
             use_cbam=True,
             use_multihead=True
@@ -289,7 +289,7 @@ def highlight_top_n_regions(cam: np.ndarray, base_image: Image.Image, N: int = 1
     drawn = False
     for cnt in contours:
         area = cv2.contourArea(cnt)
-        if area < 5:  # Ignore tiny specks
+        if area < 2:  # Ignore tiny specks
             continue
 
         drawn = True
@@ -573,8 +573,8 @@ def main():
         select_model = st.sidebar.selectbox("Select Model", ['CNN_With_Attention', 'Vanilla CNN'])
 
         if select_model == 'CNN_With_Attention':
-            model_path = os.path.join(project_dir, "model_checkpoint", "cnn_attn_chk_pt", "best_model_epoch_13.pth")
-        else:
+            model_path = os.path.join(project_dir, "model_checkpoint", "cnn_attn_chk_pt", "fusion_best_model_epoch_20.pth")
+        else: #Focal_best_model_epoch_30.pth
             model_path = os.path.join(project_dir, "model_checkpoint", "cnn_chk_pt", "No_Attn_best_model_epoch_13.pth")
 
         with st.spinner("Loading model..."):
@@ -597,7 +597,7 @@ def main():
                     display_gradcam_flow(model, input_tensor, image)
 
                     cam_np = gradcam.generate_cam(input_tensor, class_idx=pred_idx)
-                    highlighted_img = highlight_top_n_regions(cam_np, image, N=25, mode="contour")
+                    highlighted_img = highlight_top_n_regions(cam_np, image, N=25, mode="box")
                     st.image(highlighted_img, caption="Top Attention Zones", use_container_width=True)
 
                     # Lesion details
