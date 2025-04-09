@@ -607,12 +607,11 @@ def main():
             df_loc['age'] = df_loc['age'].replace([np.inf, -np.inf], np.nan)
             df_loc = df_loc.dropna(subset=['age', 'localization'])
 
-            # 🎨 Define pastel palette for localization
+            # Define pastel palette for localization
             localizations = df_loc['localization'].unique().tolist()
-            pastel_palette = ['#A6CEE3', '#B2DF8A', '#FB9A99', '#FDBF6F', '#CAB2D6', '#FFFF99',
-                              '#1F78B4']  # You can expand this
+            crest_palette = sns.color_palette("crest", n_colors=len(localizations)).as_hex()
 
-            color_scale = alt.Scale(domain=localizations, range=pastel_palette)
+            color_scale = alt.Scale(domain=localizations, range=crest_palette)
 
             #  Interactive selection
             highlight = alt.selection_single(fields=['localization'], empty='none')
