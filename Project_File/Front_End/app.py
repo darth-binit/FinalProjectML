@@ -26,6 +26,8 @@ import pandas as pd
 import seaborn as sns
 import plotly.figure_factory as ff
 import altair as alt
+import plotly.graph_objects as go
+import plotly.express as px
 
 from streamlit_option_menu import option_menu
 import plotly.graph_objects as go
@@ -391,28 +393,36 @@ def main():
             st.pyplot(fig)
 
             #Figure 2
-            fig, ax = plt.subplots(figsize=(12, 8))
-            fig.patch.set_facecolor("none")  # Make figure background transparent
-            ax.set_facecolor("none")  # Make axes background transparent
+            crest_palette = sns.color_palette("crest", n_colors=df_mod['sex'].nunique()).as_hex()
 
-            ax = sns.countplot(x='cell_type', hue='sex', data=df_mod,
-                               order=df_mod['cell_type'].value_counts().index,
-                               palette='crest', ax=ax)
-            for container in ax.containers:
-                ax.bar_label(container)
-            ax.grid(False)
-            ax.set_title('Cell Types Frequencies')
-            plt.xticks(rotation=45)
-            ax.spines['top'].set_visible(False)
-            ax.spines['right'].set_visible(False)
+            fig = px.histogram(
+                df_mod,
+                x='cell_type',
+                color='sex',
+                category_orders={'cell_type': df_mod['cell_type'].value_counts().index.tolist()},
+                barmode='group',
+                color_discrete_sequence=crest_palette
+            )
 
-            # Make legend background transparent
-            legend = ax.get_legend()
-            legend.get_frame().set_facecolor('none')  # fully transparent
-            legend.get_frame().set_alpha(0.0)  # ensure alpha is 0
-            legend.get_frame().set_edgecolor('none')  # optional: remove legend border
+            fig.update_layout(
+                title=dict(
+                    text="Cell Types Frequencies",
+                    x=0.5,
+                    font=dict(size=14, family="Arial", color="black")  # Normal text, not bold
+                ),
+                legend=dict(
+                    itemclick='toggleothers',
+                    bgcolor='rgba(0,0,0,0)'
+                ),
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                height=600  # Increase chart height
+            )
 
-            st.pyplot(fig)
+            fig.update_xaxes(title='', tickangle=45)
+            fig.update_yaxes(title='Count')
+
+            st.plotly_chart(fig, use_container_width=True)
 
             #figure 3
             maskcsv_mod_path = os.path.join(project_dir, "data", "mask_statistics.csv")
@@ -466,53 +476,55 @@ def main():
                 ax.bar_label(container)
             ax.grid(False)
             ax.set_title('Localization Area Frequencies')
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
             plt.xticks(rotation=45)
             st.pyplot(fig)
 
             #Figure 2
             df_grouped = df_mod.dropna(subset=['localization', 'sex'])
 
-            # Sort localizations by frequency (just like Seaborn's order)
+            # Sort localizations and define crest palette (you can customize further)
             loc_order = df_grouped['localization'].value_counts().index.tolist()
             sex_order = df_grouped['sex'].unique().tolist()
-            crest_palette = ['#64b5cd', '#397e8e', '#9bd0b6']  # Adjust based on unique sex values
-            color_scale = alt.Scale(domain=sex_order, range=crest_palette)
+            crest_palette = sns.color_palette("crest", n_colors=len(df_grouped['sex'].unique())).as_hex()
 
-            # Selection
-            highlight = alt.selection_single(fields=['sex'], empty='none')
-
-            # Grouped (clustered) bar chart with highlight
-            grouped_chart = alt.Chart(df_grouped).mark_bar(size=17).encode(
-                x=alt.X('localization:N', sort=loc_order, title='Localization Area'),
-                xOffset='sex:N',
-                y=alt.Y('count():Q', title='Count'),
-                color=alt.condition(
-                    highlight,
-                    alt.value('crimson'),
-                    alt.Color('sex:N', scale=color_scale, legend=alt.Legend(title='Sex'))
-                ),
-                tooltip=['localization:N', 'sex:N', 'count():Q']
-            ).add_selection(
-                highlight
-            ).properties(
-                width=800,
-                height=700,  # Increased height
-                title=alt.TitleParams(
-                    text='Localization Area Frequencies',
-                    fontSize=16,
-                    fontWeight='normal',
-                    anchor='middle'
-                ),
-                background='rgba(0,0,0,0)'
-            ).configure_axis(
-                labelAngle=45,
-                grid=False
-            ).configure_view(
-                stroke=None
+            fig = px.histogram(
+                df_grouped,
+                x="localization",
+                color="sex",
+                barmode="group",
+                category_orders={"localization": loc_order},
+                color_discrete_sequence=crest_palette
             )
 
-            # Show in Streamlit
-            st.altair_chart(grouped_chart, use_container_width=True)
+            fig.update_layout(
+                height=800,  # taller height
+                annotations=[
+                    dict(
+                        text="Sex Wise Localization",
+                        x=0.5,
+                        y=1.1,
+                        xref='paper',
+                        yref='paper',
+                        showarrow=False,
+                        font=dict(size=17, family="Arial", color="black")
+                    )
+                ],
+                xaxis_title="Localization Area",
+                yaxis_title="Count",
+                plot_bgcolor="rgba(0,0,0,0)",
+                paper_bgcolor="rgba(0,0,0,0)",
+                legend=dict(
+                    title="Sex",
+                    itemclick='toggleothers',
+                    bgcolor="rgba(0,0,0,0)"
+                )
+            )
+
+            fig.update_xaxes(tickangle=45)
+
+            st.plotly_chart(fig, use_container_width=True)
 
         elif selected_dataset == "Age":
             #Figure 1
@@ -602,49 +614,64 @@ def main():
 
 
             #Figure 3
-            # Clean the data
             df_loc = df_mod.copy()
             df_loc['age'] = df_loc['age'].replace([np.inf, -np.inf], np.nan)
             df_loc = df_loc.dropna(subset=['age', 'localization'])
 
-            # Define pastel palette for localization
-            localizations = df_loc['localization'].unique().tolist()
-            crest_palette = sns.color_palette("crest", n_colors=len(localizations)).as_hex()
+            # Create numeric bins instead of intervals
+            bin_edges = list(range(0, 85, 5))  # Bins: 0–5, 5–10, ..., 80–85
+            df_loc['age_bin'] = pd.cut(df_loc['age'], bins=bin_edges, right=False, include_lowest=True)
 
-            color_scale = alt.Scale(domain=localizations, range=crest_palette)
+            # Format bin labels as integers
+            df_loc['age_bin_label'] = df_loc['age_bin'].apply(lambda x: int(x.left))
 
-            #  Interactive selection
-            highlight = alt.selection_single(fields=['localization'], empty='none')
+            # Group by numeric bin and localization
+            grouped = df_loc.groupby(['age_bin_label', 'localization']).size().reset_index(name='count')
 
-            #  Altair Stacked Histogram
-            hist = alt.Chart(df_loc).mark_bar(size=22).encode(
-                x=alt.X('age:Q', bin=alt.Bin(maxbins=30), title="Age"),
-                y=alt.Y('count()', stack='zero', title='Count'),
-                color=alt.condition(
-                    highlight,
-                    alt.value("crimson"),  # Selected becomes red
-                    alt.Color('localization:N', scale=color_scale, legend=alt.Legend(title="Localization"))
-                ),
-                tooltip=['localization:N', 'count()']
-            ).add_selection(
-                highlight
-            ).properties(
-                width=750,
-                height=550,
-                background='rgba(0,0,0,0)'
-            ).configure_axis(
-                grid=False,
-                domain=False
-            ).configure_view(
-                stroke=None
+            # Pivot for bar stacking
+            pivot_df = grouped.pivot(index='age_bin_label', columns='localization', values='count').fillna(0)
+            pivot_df = pivot_df.sort_index()
+
+            # Colors
+            localizations = pivot_df.columns.tolist()
+            crest_colors = sns.color_palette("crest", n_colors=len(localizations)).as_hex()
+            # Plotly stacked bar chart
+            fig = go.Figure()
+
+            for i, loc in enumerate(localizations):
+                fig.add_trace(go.Bar(
+                    x=pivot_df.index,  # 0, 5, 10...
+                    y=pivot_df[loc],
+                    name=loc,
+                    marker=dict(color=crest_colors[i]),
+                    width=4,  # Increase bar width
+                    selected=dict(marker=dict(opacity=1)),
+                    unselected=dict(marker=dict(opacity=0.3))
+                ))
+
+            # Layout and interactivity
+            fig.update_layout(
+                barmode='stack',
+                annotations=[
+                    dict(
+                        text="Age Histogram Localization Area Wise",
+                        x=0.5,
+                        y=1.1,
+                        xref='paper',
+                        yref='paper',
+                        showarrow=False,
+                        font=dict(size=14, family="Arial", color="black"))]
+                ,
+                xaxis_title='Age',
+                yaxis_title='Count',
+                plot_bgcolor='rgba(0,0,0,0)',
+                paper_bgcolor='rgba(0,0,0,0)',
+                legend_title='Localization',
+                legend=dict(itemclick="toggleothers"),
+                height=550
             )
 
-            # Title
-            st.markdown(
-                "<h4 style='text-align:center; font-size:14px; font-weight:normal;'> Age Histogram Localization Area Wise</h4>",
-                unsafe_allow_html=True
-            )
-            st.altair_chart(hist, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True)
 
         elif selected_dataset == "dx_type":
             fig, ax = plt.subplots(figsize=(12, 8))
