@@ -8,7 +8,7 @@ __pycache__/
 
 # Ignore system files
 .DS_Store
-.ipynb_checkpoints/
+
 
 Project_File/data/augmented_data
 Project_File/data/HAM10000_images_part_1

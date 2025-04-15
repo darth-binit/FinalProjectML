@@ -24,9 +24,7 @@ import pandas as pd
 
 
 import seaborn as sns
-import plotly.figure_factory as ff
 import altair as alt
-import plotly.graph_objects as go
 import plotly.express as px
 
 from streamlit_option_menu import option_menu
@@ -106,29 +104,27 @@ lesion_details = load_lesion_details(lesion_path)
 
 @st.cache_resource
 def load_model(model_path, device, selected_model):
-    if selected_model == 'CNN_With_Attention':
-     # Instantiate your model with the same architecture as during training.
+    if selected_model == 'CNN_Double_Attention':
+        from Project_File.Model.ResNet_Re import Bb, ResNetAttn
+        model = ResNetAttn(Bb, layers=[3,3,2,2]).to(device)
+    elif selected_model == 'Vanilla CNN':
         model = ResNetAttention(
             block=BasicBlock,
-            layers=[3, 3, 2, 2],  # Must match your training configuration.
-            num_classes=7,
-            use_cbam=True,
-            use_multihead=True
-        ).to(device)
-        model.load_state_dict(torch.load(model_path, map_location=device))
-        model.eval()
-        return model
-    else:
-        model = ResNetAttention(
-            block=BasicBlock,
-            layers=[2, 2, 2, 1],  # Must match your training configuration.
+            layers=[3, 3, 2, 2],
             num_classes=7,
             use_cbam=False,
             use_multihead=False
         ).to(device)
-        model.load_state_dict(torch.load(model_path, map_location=device))
-        model.eval()
-        return model
+    else:
+        model = ResNetAttention(
+        block=BasicBlock,
+        layers=[3, 3, 2, 2],
+        num_classes=7,
+        use_cbam=True,
+        use_multihead=True).to(device)
+    model.load_state_dict(torch.load(model_path, map_location=device))
+    model.eval()
+    return model
 
 
 def predict_image(model, image, device):
@@ -511,8 +507,16 @@ def main():
                         font=dict(size=17, family="Arial", color="black")
                     )
                 ],
-                xaxis_title="Localization Area",
-                yaxis_title="Count",
+                xaxis=dict(
+                    title="Localization Area",
+                    title_font=dict(size=14, color="black"),  # <-- Set to black
+                    tickfont=dict(color="black")  # Optional: make tick labels black too
+                ),
+                yaxis=dict(
+                    title="Count",
+                    title_font=dict(size=14, color="black"),
+                    tickfont=dict(color="black")
+                ),
                 plot_bgcolor="rgba(0,0,0,0)",
                 paper_bgcolor="rgba(0,0,0,0)",
                 legend=dict(
@@ -525,6 +529,69 @@ def main():
             fig.update_xaxes(tickangle=45)
 
             st.plotly_chart(fig, use_container_width=True)
+
+            #Figure 3
+            unique_cell_types = df_mod['cell_type'].dropna().unique()
+            crest_palette = sns.color_palette("crest", n_colors=len(unique_cell_types)).as_hex()
+
+            # Step 2: Prepare Data
+            df_filtered = df_mod.dropna(subset=["cell_type", "localization"])
+            loc_order = df_filtered['localization'].value_counts().index.tolist()
+
+            # Step 3: Plotly interactive histogram
+            fig = px.histogram(
+                df_filtered,
+                x="localization",
+                color="cell_type",
+                barmode="group",
+                category_orders={"localization": loc_order},
+                color_discrete_sequence=crest_palette,
+            )
+
+            # Step 4: Enhance interactivity and styling
+            fig.update_layout(
+                height=800,
+                annotations=[
+                    dict(
+                        text="Class Wise Localization",
+                        x=0.5,
+                        y=1.1,
+                        xref='paper',
+                        yref='paper',
+                        showarrow=False,
+                        font=dict(size=17, family="Arial", color="black")
+                    )
+                ],
+                xaxis=dict(
+                    title="Body Location",
+                    title_font=dict(size=14, color="black"),  # <-- Set to black
+                    tickfont=dict(color="black")  # Optional: make tick labels black too
+                ),
+                yaxis=dict(
+                    title="Number of Images",
+                    title_font=dict(size=14, color="black"),
+                    tickfont=dict(color="black")
+                ),
+                font=dict(size=12),
+                plot_bgcolor="rgba(0,0,0,0)",
+                paper_bgcolor="rgba(0,0,0,0)",
+                legend_title="Lesion Class",
+                legend=dict(
+                    title_font=dict(size=14),
+                    font=dict(size=12),
+                    bgcolor="rgba(0,0,0,0)",  # ← Transparent legend background
+                    bordercolor="gray",
+                    borderwidth=0,
+                    itemclick="toggleothers",
+                    itemdoubleclick="toggle"
+                )
+            )
+
+            fig.update_xaxes(tickangle=45)
+
+            # Step 5: Render in Streamlit
+            st.plotly_chart(fig, use_container_width=True)
+
 
         elif selected_dataset == "Age":
             #Figure 1
@@ -691,12 +758,15 @@ def main():
     if select == "Predictive Analytics":
         uploaded_file = st.file_uploader("Upload Image for Classification", type=["jpg", "jpeg", "png"])
 
-        select_model = st.sidebar.selectbox("Select Model", ['CNN_With_Attention', 'Vanilla CNN'])
+        select_model = st.sidebar.selectbox("Select Model", ['CNN_Double_Attention','CNN_Single_Attention' ,'Vanilla CNN'])
 
-        if select_model == 'CNN_With_Attention':
-            model_path = os.path.join(project_dir, "model_checkpoint", "cnn_attn_chk_pt", "fusion_best_model_epoch_20.pth")
-        else: #Focal_best_model_epoch_30.pth
-            model_path = os.path.join(project_dir, "model_checkpoint", "cnn_chk_pt", "No_Attn_best_model_epoch_13.pth")
+        if select_model == 'CNN_Double_Attention':
+            model_path = os.path.join(project_dir, "model_checkpoint", "cnn_attn_chk_pt", "Updated_best_model_epoch_40.pth")
+        elif select_model == 'Vanilla CNN':
+            model_path = os.path.join(project_dir, "model_checkpoint", "cnn_chk_pt", "plaincnn_best_model_epoch_13.pth")
+        else:
+            model_path = os.path.join(project_dir, "model_checkpoint", "cnn_attn_chk_pt",
+                                      "fusion_best_model_epoch_20.pth")
 
         with st.spinner("Loading model..."):
             model = load_model(model_path, device, select_model)

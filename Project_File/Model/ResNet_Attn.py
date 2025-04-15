@@ -34,7 +34,6 @@ class ChBAM(nn.Module):
 
         return x_channel * sa
 
-
 # %%
 # ----------------------------
 # Define Multi-Head Self-Attention Module for 2D Feature Maps
@@ -60,12 +59,12 @@ class MultiHeadAttention2D(nn.Module):
         B, C, H, W = x.size()  # Input shape: (B, C, H, W)
         # Linear projections
         query = self.query_conv(x)  # (B, C, H, W)
-        key = self.key_conv(x)  # (B, C, H, W)
+        key = self.key_conv(x)      # (B, C, H, W)
         value = self.value_conv(x)  # (B, C, H, W)
 
         # Reshape into (B, num_heads, d_k, H*W)
         query = query.view(B, self.num_heads, self.d_k, H * W)
-        key = key.view(B, self.num_heads, self.d_k, H * W)
+        key   = key.view(B, self.num_heads, self.d_k, H * W)
         value = value.view(B, self.num_heads, self.d_k, H * W)
 
         # Transpose query: (B, num_heads, H*W, d_k)
@@ -137,7 +136,7 @@ class ResNetAttention(nn.Module):
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=1, padding=1)
 
         # Build residual layers
         self.layer1 = self._make_layer(block, 64, layers[0])
@@ -213,3 +212,5 @@ class ResNetAttention(nn.Module):
         x = torch.flatten(x, 1)  # (B, 512)
         x = self.fc(x)  # (B, num_classes)
         return x
+
+
