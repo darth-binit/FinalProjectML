@@ -21,12 +21,16 @@ We built a ResNet-18 inspired CNN from scratch and experimented with different p
 - After multiple ablation studies, we found the best trade-off by applying attention at Layer 3 and Layer 4.
 - Applying attention at earlier stages like Layer 1 was computationally expensive and not feasible on our hardware.
 
+------------------------------
+
 ✅ **Final Architecture**
 
 - CNN backbone (custom ResNet)
 - CBAM (Convolutional Block Attention Module)
 - Multi-Head Attention for capturing long-range dependencies
 - Applied in Layer 3 & 4
+
+--------------------------
 
 🌐 **Web Application (Streamlit)**
 
@@ -39,6 +43,8 @@ Our solution is deployed as an interactive web application using Streamlit. It f
 - View Grad-CAM visualizations showing where the model focused during prediction
 
 🔗 Try the app here: https://ait-ml.streamlit.app
+
+------------------------------------
 
 <pre>
 Final Project Directory
@@ -56,6 +62,7 @@ Final Project Directory
 └── README.md
 </pre>
 
+------------------------------------------
 
 💡 **Features**
 
