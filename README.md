@@ -1,8 +1,8 @@
-Skin Lesion Classification – Final Project (ML 2025)
+## Skin Lesion Classification – Final Project (ML 2025)
 
 This repository contains the complete implementation of our Machine Learning Final Project, focused on classifying skin lesions using a multimodal deep learning approach combining CNNs with Attention Mechanisms.
 
-🧪 Project Overview
+🧪 **Project Overview**
 
 Our initial idea was to build a multimodal model that accepts both:
 	•	Image data of skin lesions, and
@@ -10,20 +10,20 @@ Our initial idea was to build a multimodal model that accepts both:
 
 However, after conducting several experiments, we discovered that the metadata alone had low predictive power and offered minimal independent information. Due to this, and with limited hardware resources, we decided to pivot and focus exclusively on image-based classification.
 
-🧩 Architecture
+🧩 **Architecture**
 
 We built a ResNet-18 inspired CNN from scratch and experimented with different placements of attention mechanisms:
 	•	We tested applying attention (CBAM + Multi-Head Self-Attention) at various layers.
 	•	After multiple ablation studies, we found the best trade-off by applying attention at Layer 3 and Layer 4.
 	•	Applying attention at earlier stages like Layer 1 was computationally expensive and not feasible on our hardware.
 
-✅ Final Architecture
+✅ **Final Architecture**
 	•	CNN backbone (custom ResNet)
 	•	CBAM (Convolutional Block Attention Module)
 	•	Multi-Head Attention for capturing long-range dependencies
 	•	Applied in Layer 3 & 4
 
-🌐 Web Application (Streamlit)
+🌐 **Web Application (Streamlit)**
 
 Our solution is deployed as an interactive web application using Streamlit. It features:
 	•	Descriptive Analytics tab with interactive data visualization (using Plotly, Seaborn)
@@ -34,8 +34,9 @@ Our solution is deployed as an interactive web application using Streamlit. It f
 
 🔗 Try the app here: https://ait-ml.streamlit.app
 
-📦 Repository Structure
-FinalProject/
+<pre>
+```text
+📦 FinalProject/
 │
 ├── Project_File/
 │   ├── Model/                # CNN and Attention model definitions
@@ -47,8 +48,11 @@ FinalProject/
 ├── requirements.txt
 ├── Dockerfile (optional)
 └── README.md
+```
+</pre>
 
-💡 Features
+
+💡 **Features**
 	•	Custom attention-based CNN model
 	•	Grad-CAM and heatmap support
 	•	Interactive charts and data exploration
