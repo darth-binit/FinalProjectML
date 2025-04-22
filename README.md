@@ -11,6 +11,8 @@ Our initial idea was to build a multimodal model that accepts both:
 
 However, after conducting several experiments, we discovered that the metadata alone had low predictive power and offered minimal independent information. Due to this, and with limited hardware resources, we decided to pivot and focus exclusively on image-based classification.
 
+\noindent\rule{\linewidth}{0.4pt}
+
 🧩 **Architecture**
 
 We built a ResNet-18 inspired CNN from scratch and experimented with different placements of attention mechanisms:
