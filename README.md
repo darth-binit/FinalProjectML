@@ -35,7 +35,7 @@ Our solution is deployed as an interactive web application using Streamlit. It f
 🔗 Try the app here: https://ait-ml.streamlit.app
 
 <pre>
-```text
+Final Project Directory
 📦 FinalProject/
 │
 ├── Project_File/
@@ -48,7 +48,6 @@ Our solution is deployed as an interactive web application using Streamlit. It f
 ├── requirements.txt
 ├── Dockerfile (optional)
 └── README.md
-```
 </pre>
 
 
